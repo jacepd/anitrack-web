@@ -17,7 +17,7 @@ export default async function HomePage() {
           AniTrack
         </h1>
         <p className="text-subtle text-lg max-w-xl mx-auto">
-          Track every anime you've watched, discover what's airing now,
+          Track every anime you have watched, discover what is airing now,
           and share your list with friends.
         </p>
       </section>

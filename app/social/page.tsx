@@ -114,7 +114,7 @@ export default async function SocialPage() {
           <p className="text-4xl mb-3">👥</p>
           <p className="text-subtle text-lg">No activity yet.</p>
           <p className="text-subtle text-sm mt-1">
-            Follow friends to see what they're watching!
+            Follow friends to see what they are watching!
           </p>
           <Link href="/social/find-friends" className="btn-primary inline-block mt-4">
             Find Friends
