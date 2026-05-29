@@ -1,16 +1,25 @@
 import { Anime } from "@/lib/jikan";
 import { AnimeCard } from "./AnimeCard";
+import Link from "next/link";
 
 interface AnimeRowProps {
   title: string;
   anime: Anime[];
+  viewAllHref?: string;
 }
 
-export function AnimeRow({ title, anime }: AnimeRowProps) {
+export function AnimeRow({ title, anime, viewAllHref }: AnimeRowProps) {
   return (
     <section>
-      <h2 className="text-2xl font-bold mb-4">{title}</h2>
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-bold text-text-main">{title}</h2>
+        {viewAllHref && (
+          <Link href={viewAllHref} className="text-sm text-accent hover:text-primary transition-colors font-bold">
+            See all →
+          </Link>
+        )}
+      </div>
+      <div className="anime-grid">
         {anime.map((a) => (
           <AnimeCard key={a.mal_id} anime={a} />
         ))}

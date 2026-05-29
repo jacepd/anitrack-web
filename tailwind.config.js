@@ -8,17 +8,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary:  "#E85D04",
-        secondary: "#1A1A2E",
-        accent:   "#F48C06",
-        surface:  "#16213E",
-        muted:    "#0F3460",
+        primary:   "#3B82F6",
+        secondary: "#0D0D1A",
+        accent:    "#60A5FA",
+        surface:   "#111827",
+        muted:     "#1E2A3A",
         "text-main": "#EAEAEA",
-        subtle:   "#9CA3AF",
-      },
-      fontFamily: {
-        heading: ["var(--font-rajdhani)"],
-        body:    ["var(--font-inter)"],
+        subtle:    "#9CA3AF",
       },
     },
   },
