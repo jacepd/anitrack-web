@@ -13,8 +13,10 @@ export interface Anime {
   rank?: number;
   popularity?: number;
   episodes?: number;
+  episodes_aired?: number; // for currently airing anime
   status: string;
-  aired: { string: string };
+  aired: { string: string; from?: string; to?: string };
+  broadcast?: { day?: string; time?: string; timezone?: string; string?: string };
   genres: { mal_id: number; name: string }[];
   studios: { mal_id: number; name: string }[];
   rating?: string;
@@ -35,7 +37,10 @@ export interface Character {
   };
   role: string;
   voice_actors: {
-    person: { name: string };
+    person: {
+      name: string;
+      images?: { jpg?: { image_url: string }; webp?: { image_url: string } };
+    };
     language: string;
   }[];
 }
@@ -69,21 +74,29 @@ async function jikanFetch<T>(endpoint: string): Promise<T> {
   return res.json();
 }
 
+// Short cache for airing anime since episode count changes weekly
+async function jikanFetchShort<T>(endpoint: string): Promise<T> {
+  await delay(350);
+  const res = await fetch(`${BASE_URL}${endpoint}`, { next: { revalidate: 3600 } });
+  if (!res.ok) throw new Error(`Jikan error: ${res.status}`);
+  return res.json();
+}
+
 export const jikanApi = {
   searchAnime: (query: string, page = 1) =>
     jikanFetch<JikanResponse<Anime[]>>(
       `/anime?q=${encodeURIComponent(query)}&page=${page}&limit=20&sfw=true`
     ),
   getAnime: (id: number) =>
-    jikanFetch<JikanResponse<Anime>>(`/anime/${id}`),
+    jikanFetchShort<JikanResponse<Anime>>(`/anime/${id}`),
   getAnimeFull: (id: number) =>
-    jikanFetch<JikanResponse<Anime>>(`/anime/${id}/full`),
+    jikanFetchShort<JikanResponse<Anime>>(`/anime/${id}/full`),
   getTopAnime: (page = 1, filter?: "airing" | "upcoming" | "bypopularity") =>
     jikanFetch<JikanResponse<Anime[]>>(
       `/top/anime?page=${page}${filter ? `&filter=${filter}` : ""}`
     ),
   getCurrentSeason: (page = 1) =>
-    jikanFetch<JikanResponse<Anime[]>>(`/seasons/now?page=${page}`),
+    jikanFetchShort<JikanResponse<Anime[]>>(`/seasons/now?page=${page}`),
   getUpcomingSeason: (page = 1) =>
     jikanFetch<JikanResponse<Anime[]>>(`/seasons/upcoming?page=${page}`),
   getAnimeByGenre: (genreId: number, page = 1) =>
@@ -106,7 +119,6 @@ export const jikanApi = {
     jikanFetch<JikanResponse<Relation[]>>(
       `/anime/${id}/relations`
     ),
-  // Fetch a related anime's details by mal_id
   getAnimeById: (id: number) =>
-    jikanFetch<JikanResponse<Anime>>(`/anime/${id}`),
+    jikanFetchShort<JikanResponse<Anime>>(`/anime/${id}`),
 };

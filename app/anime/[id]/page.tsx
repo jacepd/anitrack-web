@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { jikanApi } from "@/lib/jikan";
 import { AddToListButton } from "@/components/anime/AddToListButton";
+import { EpisodeTracker } from "@/components/anime/EpisodeTracker";
 
 interface AnimePageProps {
   params: { id: string };
@@ -322,13 +323,28 @@ export default async function AnimePage({ params }: AnimePageProps) {
 
           <div className="flex flex-wrap gap-2">
             {data.type && <Chip text={data.type} />}
-            {data.episodes && <Chip text={`${data.episodes} episodes`} />}
+            {data.status === "Currently Airing" ? (
+              <Chip
+                text={`Ep ${data.episodes_aired ?? "?"} / ${data.episodes ?? "?"} aired`}
+                highlight
+              />
+            ) : (
+              data.episodes && <Chip text={`${data.episodes} episodes`} />
+            )}
             {data.status && <Chip text={data.status} />}
             {data.year && (
               <Chip text={`${data.season ? data.season + " " : ""}${data.year}`} />
             )}
             {data.rating && <Chip text={data.rating} />}
           </div>
+
+          {/* Broadcast schedule for airing anime */}
+          {data.status === "Currently Airing" && data.broadcast?.string && (
+            <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2">
+              <span className="text-primary text-sm">📡</span>
+              <span className="text-sm text-text-main font-medium">Airs {data.broadcast.string}</span>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-2">
             {data.genres.map((g: any) => (
@@ -350,6 +366,15 @@ export default async function AnimePage({ params }: AnimePageProps) {
             title={getTitle(data) ?? data.title}
             imageUrl={posterImage ?? ""}
             totalEpisodes={data.episodes}
+            episodesAired={data.episodes_aired}
+            isAiring={data.status === "Currently Airing"}
+          />
+
+          <EpisodeTracker
+            malId={data.mal_id}
+            totalEpisodes={data.episodes}
+            episodesAired={data.episodes_aired}
+            isAiring={data.status === "Currently Airing"}
           />
         </div>
       </div>
@@ -395,9 +420,13 @@ export default async function AnimePage({ params }: AnimePageProps) {
   );
 }
 
-function Chip({ text }: { text: string }) {
+function Chip({ text, highlight }: { text: string; highlight?: boolean }) {
   return (
-    <span className="bg-muted text-text-main rounded-full px-3 py-1 text-sm">
+    <span className={`rounded-full px-3 py-1 text-sm font-medium ${
+      highlight
+        ? "bg-primary/20 text-primary border border-primary/30"
+        : "bg-muted text-text-main"
+    }`}>
       {text}
     </span>
   );

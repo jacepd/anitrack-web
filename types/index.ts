@@ -20,6 +20,7 @@ export interface AnimeListEntry {
   review?: string;
   episodes_watched?: number;
   total_episodes?: number;
+  episodes_aired?: number;
   created_at: string;
   updated_at: string;
 }

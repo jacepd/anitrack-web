@@ -18,9 +18,11 @@ interface Props {
   title: string;
   imageUrl: string;
   totalEpisodes?: number;
+  episodesAired?: number;
+  isAiring?: boolean;
 }
 
-export function AddToListButton({ malId, title, imageUrl, totalEpisodes }: Props) {
+export function AddToListButton({ malId, title, imageUrl, totalEpisodes, episodesAired, isAiring }: Props) {
   const { user } = useAuthStore();
   const { entries, loading, addEntry, updateEntry, removeEntry } = useAnimeListStore();
   const [open, setOpen] = useState(false);
@@ -65,6 +67,7 @@ export function AddToListButton({ malId, title, imageUrl, totalEpisodes }: Props
         image_url: imageUrl,
         status,
         total_episodes: totalEpisodes,
+        episodes_aired: episodesAired,
       });
       // Log to activity feed
       await supabase.from("activity_feed").insert({

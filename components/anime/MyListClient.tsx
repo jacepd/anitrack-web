@@ -7,92 +7,7 @@ import { useAuthStore } from "@/stores/authStore";
 
 const TABS: WatchStatus[] = ["watching", "completed", "plan_to_watch", "on_hold", "dropped"];
 
-// Episode counter component — inline in each list entry
-function EpisodeCounter({ entry }: { entry: AnimeListEntry }) {
-  const { updateEntry } = useAnimeListStore();
-  const [saving, setSaving] = useState(false);
-  const watched = entry.episodes_watched ?? 0;
-  const total = entry.total_episodes;
 
-  const update = async (newCount: number) => {
-    if (saving) return;
-    if (newCount < 0) return;
-    if (total && newCount > total) return;
-    setSaving(true);
-
-    // If they hit the total, auto-mark as completed
-    const newStatus = total && newCount === total ? "completed" : entry.status;
-    await updateEntry(entry.id, {
-      episodes_watched: newCount,
-      status: newStatus,
-    });
-    setSaving(false);
-  };
-
-  const percent = total ? Math.min((watched / total) * 100, 100) : 0;
-
-  return (
-    <div className="mt-3 space-y-2" onClick={(e) => e.preventDefault()}>
-      {/* Progress bar */}
-      {total && (
-        <div className="bg-muted rounded-full h-1.5">
-          <div
-            className="bg-primary rounded-full h-1.5 transition-all duration-300"
-            style={{ width: `${percent}%` }}
-          />
-        </div>
-      )}
-
-      {/* Controls */}
-      <div className="flex items-center gap-2">
-        {/* Decrease by 1 */}
-        <button
-          onClick={() => update(watched - 1)}
-          disabled={saving || watched === 0}
-          className="w-7 h-7 rounded-lg bg-muted hover:bg-primary/30 text-text-main font-bold text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
-        >
-          −
-        </button>
-
-        {/* Episode count display */}
-        <span className="text-sm text-text-main font-bold min-w-[80px] text-center">
-          {watched}{total ? ` / ${total}` : ""} eps
-        </span>
-
-        {/* Increase by 1 */}
-        <button
-          onClick={() => update(watched + 1)}
-          disabled={saving || (!!total && watched >= total)}
-          className="w-7 h-7 rounded-lg bg-muted hover:bg-primary/30 text-text-main font-bold text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
-        >
-          +
-        </button>
-
-        {/* Quick +5 button */}
-        <button
-          onClick={() => update(watched + 5)}
-          disabled={saving || (!!total && watched >= total)}
-          className="px-2 h-7 rounded-lg bg-muted hover:bg-primary/30 text-subtle hover:text-text-main text-xs font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          +5
-        </button>
-
-        {/* Quick +10 button */}
-        <button
-          onClick={() => update(watched + 10)}
-          disabled={saving || (!!total && watched >= total)}
-          className="px-2 h-7 rounded-lg bg-muted hover:bg-primary/30 text-subtle hover:text-text-main text-xs font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          +10
-        </button>
-
-        {saving && (
-          <span className="text-xs text-subtle animate-pulse ml-1">saving...</span>
-        )}
-      </div>
-    </div>
-  );
-}
 
 export function MyListClient({ initialEntries }: { initialEntries: AnimeListEntry[] }) {
   const { user } = useAuthStore();
@@ -173,24 +88,24 @@ export function MyListClient({ initialEntries }: { initialEntries: AnimeListEntr
                   </span>
                 </div>
 
-                {/* Episode counter — only show for watching/on_hold */}
-                {(entry.status === "watching" || entry.status === "on_hold") && (
-                  <EpisodeCounter entry={entry} />
-                )}
-
-                {/* Completed — just show progress */}
-                {entry.status === "completed" && entry.total_episodes && (
-                  <p className="text-subtle text-xs mt-2">
-                    ✓ All {entry.total_episodes} episodes watched
-                    {entry.score && <span className="ml-2">· ★ {entry.score}/10</span>}
-                  </p>
-                )}
-
-                {/* Plan to watch — show total episodes if known */}
-                {entry.status === "plan_to_watch" && entry.total_episodes && (
-                  <p className="text-subtle text-xs mt-2">
-                    {entry.total_episodes} episodes
-                  </p>
+                {/* Episode progress */}
+                {entry.total_episodes && (
+                  <div className="mt-2">
+                    <div className="flex justify-between text-xs text-subtle mb-1">
+                      <span>{entry.episodes_watched ?? 0} / {entry.total_episodes} eps</span>
+                      {entry.score && <span>★ {entry.score}/10</span>}
+                    </div>
+                    <div className="bg-muted rounded-full h-1.5">
+                      <div
+                        className="bg-primary rounded-full h-1.5 transition-all"
+                        style={{
+                          width: `${Math.min(
+                            ((entry.episodes_watched ?? 0) / entry.total_episodes) * 100, 100
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
