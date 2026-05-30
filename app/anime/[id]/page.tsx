@@ -9,11 +9,6 @@ interface AnimePageProps {
   params: { id: string };
 }
 
-const STORY_RELATIONS = [
-  "Sequel", "Prequel", "Parent story", "Side story",
-  "Summary", "Alternative version", "Spin-off"
-];
-
 function getTitle(anime: any) {
   return anime?.title_english || anime?.title || null;
 }
@@ -28,7 +23,7 @@ function getImage(images: any) {
   );
 }
 
-// ---- Streamed sections (load after hero) ----
+// ---- Streamed sections ----
 
 async function CharactersSection({ id }: { id: number }) {
   const res = await jikanApi.getCharacters(id).catch(() => null);
@@ -96,41 +91,71 @@ async function CharactersSection({ id }: { id: number }) {
   );
 }
 
-async function RelationsSection({ id }: { id: number }) {
+async function SequelsPrequelsSection({ id }: { id: number }) {
   const res = await jikanApi.getRelations(id).catch(() => null);
   const relations = (res as any)?.data ?? [];
 
-  const storyRelations = relations
-    .filter((r: any) => STORY_RELATIONS.includes(r.relation))
+  // Only sequels and prequels, only anime type
+  const sequelPrequel = relations
+    .filter((r: any) => r.relation === "Sequel" || r.relation === "Prequel")
     .map((r: any) => ({
       ...r,
       entry: r.entry.filter((e: any) => e.type === "anime"),
     }))
     .filter((r: any) => r.entry.length > 0);
 
-  if (!storyRelations.length) return null;
+  if (!sequelPrequel.length) return null;
+
+  // Fetch details for each entry to get images and english titles
+  const allEntries = sequelPrequel.flatMap((r: any) =>
+    r.entry.map((e: any) => ({ ...e, relation: r.relation }))
+  );
+
+  const detailsMap: Record<number, any> = {};
+  await Promise.allSettled(
+    allEntries.map(async (entry: any) => {
+      const detail = await jikanApi.getAnimeById(entry.mal_id).catch(() => null);
+      if (detail?.data) detailsMap[entry.mal_id] = detail.data;
+    })
+  );
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4 text-text-main">Related Anime</h2>
+      <h2 className="text-xl font-bold mb-4 text-text-main">Sequels & Prequels</h2>
       <div className="space-y-5">
-        {storyRelations.map((relation: any) => (
+        {sequelPrequel.map((relation: any) => (
           <div key={relation.relation}>
             <h3 className="text-subtle text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
               <span className="w-1 h-4 bg-primary rounded-full inline-block" />
               {relation.relation}
             </h3>
-            <div className="flex flex-col gap-2">
-              {relation.entry.map((entry: any) => (
-                <Link key={entry.mal_id} href={`/anime/${entry.mal_id}`}
-                  className="card flex items-center gap-3 hover:border-primary/40 transition-colors py-3">
-                  <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
-                  <span className="text-text-main text-sm font-bold hover:text-primary transition-colors">
-                    {entry.name}
-                  </span>
-                  <span className="ml-auto text-subtle text-xs">→</span>
-                </Link>
-              ))}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {relation.entry.map((entry: any) => {
+                const details = detailsMap[entry.mal_id];
+                const image = details ? getImage(details.images) : null;
+                const title = details ? (getTitle(details) ?? entry.name) : entry.name;
+                return (
+                  <Link key={entry.mal_id} href={`/anime/${entry.mal_id}`}>
+                    <div className="group cursor-pointer">
+                      <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-surface"
+                        style={{ border: "0.5px solid #1E2A3A" }}>
+                        {image ? (
+                          <Image src={image} alt={title} fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes="150px" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center p-3">
+                            <span className="text-subtle text-xs text-center leading-tight">{title}</span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="mt-2 text-xs font-bold leading-tight line-clamp-2 text-text-main group-hover:text-primary transition-colors">
+                        {title}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         ))}
@@ -141,7 +166,8 @@ async function RelationsSection({ id }: { id: number }) {
 
 async function RecommendationsSection({ id }: { id: number }) {
   const res = await jikanApi.getRecommendations(id).catch(() => null);
-  const recommendations = (res as any)?.data?.slice(0, 12) ?? [];
+  // Reduced to 6
+  const recommendations = (res as any)?.data?.slice(0, 6) ?? [];
 
   if (!recommendations.length) return null;
 
@@ -179,7 +205,7 @@ async function RecommendationsSection({ id }: { id: number }) {
   );
 }
 
-// Skeleton fallbacks for Suspense
+// Skeletons
 function CharactersSkeleton() {
   return (
     <div className="animate-pulse">
@@ -199,13 +225,16 @@ function CharactersSkeleton() {
   );
 }
 
-function RelationsSkeleton() {
+function SequelsSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="h-6 bg-surface rounded w-36 mb-4" />
-      <div className="flex flex-col gap-2">
+      <div className="h-6 bg-surface rounded w-48 mb-4" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-12 bg-surface rounded-xl" />
+          <div key={i}>
+            <div className="aspect-[2/3] rounded-xl bg-surface" />
+            <div className="h-3 bg-surface rounded mt-2" />
+          </div>
         ))}
       </div>
     </div>
@@ -217,7 +246,7 @@ function RecommendationsSkeleton() {
     <div className="animate-pulse">
       <div className="h-6 bg-surface rounded w-48 mb-4" />
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-        {[...Array(12)].map((_, i) => (
+        {[...Array(6)].map((_, i) => (
           <div key={i}>
             <div className="aspect-[2/3] rounded-xl bg-surface" />
             <div className="h-3 bg-surface rounded mt-2" />
@@ -228,11 +257,10 @@ function RecommendationsSkeleton() {
   );
 }
 
-// ---- Main page — only fetches core anime data upfront ----
+// ---- Main page ----
 
 export default async function AnimePage({ params }: AnimePageProps) {
   const id = parseInt(params.id);
-
   const animeRes = await jikanApi.getAnimeFull(id).catch(() => null);
   if (!animeRes) notFound();
 
@@ -348,17 +376,17 @@ export default async function AnimePage({ params }: AnimePageProps) {
         </div>
       )}
 
-      {/* Characters — streams in independently */}
+      {/* Characters */}
       <Suspense fallback={<CharactersSkeleton />}>
         <CharactersSection id={id} />
       </Suspense>
 
-      {/* Related — streams in independently */}
-      <Suspense fallback={<RelationsSkeleton />}>
-        <RelationsSection id={id} />
+      {/* Sequels & Prequels */}
+      <Suspense fallback={<SequelsSkeleton />}>
+        <SequelsPrequelsSection id={id} />
       </Suspense>
 
-      {/* Recommendations — streams in independently */}
+      {/* Recommendations */}
       <Suspense fallback={<RecommendationsSkeleton />}>
         <RecommendationsSection id={id} />
       </Suspense>
