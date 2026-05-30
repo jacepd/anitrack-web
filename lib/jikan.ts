@@ -24,6 +24,32 @@ export interface Anime {
   trailer?: { youtube_id?: string };
 }
 
+export interface Character {
+  character: {
+    mal_id: number;
+    name: string;
+    images: {
+      jpg: { image_url: string };
+      webp: { image_url: string };
+    };
+  };
+  role: string;
+  voice_actors: {
+    person: { name: string };
+    language: string;
+  }[];
+}
+
+export interface Relation {
+  relation: string;
+  entry: {
+    mal_id: number;
+    name: string;
+    type: string;
+    url: string;
+  }[];
+}
+
 export interface JikanResponse<T> {
   data: T;
   pagination?: {
@@ -38,7 +64,7 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function jikanFetch<T>(endpoint: string): Promise<T> {
   await delay(350);
-  const res = await fetch(`${BASE_URL}${endpoint}`, { next: { revalidate: 3600 } });
+  const res = await fetch(`${BASE_URL}${endpoint}`, { next: { revalidate: 86400 } });
   if (!res.ok) throw new Error(`Jikan error: ${res.status}`);
   return res.json();
 }
@@ -72,4 +98,15 @@ export const jikanApi = {
     jikanFetch<JikanResponse<{ entry: Anime }[]>>(
       `/anime/${id}/recommendations`
     ),
+  getCharacters: (id: number) =>
+    jikanFetch<JikanResponse<Character[]>>(
+      `/anime/${id}/characters`
+    ),
+  getRelations: (id: number) =>
+    jikanFetch<JikanResponse<Relation[]>>(
+      `/anime/${id}/relations`
+    ),
+  // Fetch a related anime's details by mal_id
+  getAnimeById: (id: number) =>
+    jikanFetch<JikanResponse<Anime>>(`/anime/${id}`),
 };
